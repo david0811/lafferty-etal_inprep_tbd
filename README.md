@@ -4,11 +4,11 @@ _your zenodo badge here_
 
 **A stylized but rich multi-sector model that serves as a testbed for validating uncertainty quantification methods** (tentative)
 
-David Lafferty <sup>1\*</sup>, Katerina Tang <sup>2</sup>, Vivek Srikrishnan <sup>2</sup>, Ryan Sriver <sup>1</sup>, Klaus Keller <sup>3</sup>, Jonathan Lamontagne <sup>4</sup> 
+David Lafferty<sup>1\*</sup>, Katerina Tang<sup>2</sup>, Vivek Srikrishnan<sup>2</sup>, Ryan Sriver<sup>1</sup>, Klaus Keller<sup>3</sup>, Jonathan Lamontagne<sup>4</sup> 
 
-<sup>1</sup> University of Illinois
-<sup>2</sup> Cornell University
-<sup>3</sup> Dartmouth College
+<sup>1</sup> University of Illinois <br>
+<sup>2</sup> Cornell University <br>
+<sup>3</sup> Dartmouth College <br>
 <sup>4</sup> Tufts University
 
 \* corresponding author: davidcl2@illinois.edu
