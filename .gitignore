@@ -2,3 +2,4 @@
 .Rproj.user/
 input_data/
 output_data/
+__pycache__/
