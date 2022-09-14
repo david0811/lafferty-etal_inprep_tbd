@@ -33,7 +33,7 @@ All fully processed input data:
 
 _Input data reference goes here._
 
-Note that *almost* all input data can be downloaded and pre-processed programatically by following the instructions in the [How to reproduce the experiment: Model construction](#model-construction) section. This section will list all input data sources and describe how to generate input data that requires some manual processing. 
+Note that *all* input data can be downloaded and pre-processed programatically by following the instructions in the [How to reproduce the experiment: Model construction](#model-construction) section. This section includes a list of all source locations. 
 
 | Data Description | Source | URL | Additonal Instructions to Access | Date Accessed |
 | --- | --- | --- | --- | --- |
@@ -50,8 +50,6 @@ Note that *almost* all input data can be downloaded and pre-processed programati
 | 2013, 2018 US state-level water applied to soybean | USDA NASS Irrigation and Water Management Survey | [https://quickstats.nass.usda.gov/](https://quickstats.nass.usda.gov/) | *CENSUS - CROPS - FIELD CROPS - SOYBEANS - WATER APPLIED - SOYBEANS, IRRIGATED - WATER APPLIED, MEASURED IN ACRE FEET / ACRE - TOTAL - STATE* | 09/14/2022 |
 | 2013, 2018 US state-level irrigation expansion costs | USDA NASS Irrigation and Water Management Survey | [https://quickstats.nass.usda.gov/](https://quickstats.nass.usda.gov/) | *CENSUS - ECONOMICS - IRRIGATION - FACILITIES & EQUIPMENT - STATE* | 09/14/2022 |
 | 2013, 2018 US state-level irrigation application costs | USDA NASS Irrigation and Water Management Survey | [https://quickstats.nass.usda.gov/](https://quickstats.nass.usda.gov/) | *CENSUS - ECONOMICS - IRRIGATION - ENERGY - ........ - STATE* | 09/14/2022 |
-
-n. List steps to download and pre-process non-machine-readable USDA data
 
 ### Output data
 
