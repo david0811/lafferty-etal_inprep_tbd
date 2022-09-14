@@ -1,7 +1,7 @@
 #!/bin/bash
 
-mkdir ../input_data/raw/gridmet_raw
-cd ../input_data/raw/gridmet_raw
+mkdir ../input_data/gridmet_raw
+cd ../input_data/gridmet_raw
 
 wget -nc -c -nd http://www.northwestknowledge.net/metdata/data/pr_1979.nc
 wget -nc -c -nd http://www.northwestknowledge.net/metdata/data/pr_1980.nc
