@@ -36,7 +36,7 @@ _Input data reference goes here._
 Note that *almost* all input data can be downloaded and pre-processed programatically by following the instructions in the [How to reproduce the experiment: Model construction](#model-construction) section. This section will list all input data sources and describe how to generate input data that requires some manual processing. 
 
 | Index | Data Description | Source | URL | Additonal Instructions to Access | Date Accessed |
-| --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- |
 | 1 | 1979-2020 gridded meteorological observations | gridMET (also known/cited as METDATA) | [https://www.climatologylab.org/gridmet.html](https://www.climatologylab.org/gridmet.html) | *Download* tab | 09/14/2022 |
 | 2 | Shapefile of US counties and states | US Census Bureau | [https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html](https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html) | *cb_2018_us_county_20m.zip* and *cb_2018_us_state_20m.zip* | 09/14/2022 |
 | 3 | 1979-2020 US county-level maize yields | USDA National Agricultural Statistics Service (NASS) | [https://quickstats.nass.usda.gov/](https://quickstats.nass.usda.gov/) | *SURVEY - CROPS - FIELD CROPS - CORN - YIELD - CORN, GRAIN - YIELD, MEASURED IN BU/ACRE - COUNTY* | 09/14/2022 |
