@@ -35,7 +35,7 @@ _Input data reference goes here._
 
 Note that *all* input data can be downloaded and pre-processed programatically by following the instructions in the [How to reproduce the experiment: Model construction](#model-construction) section. This section includes a list of all source locations. 
 
-| Data Description | Source | URL | Additonal Instructions to Access | Date Accessed |
+| Data Description | Source | URL | Additonal Instructions | Date Accessed |
 | --- | --- | --- | --- | --- |
 | 1979-2020 gridded meteorological observations | gridMET (also known/cited as METDATA) | https://www.climatologylab.org/gridmet.html | *Download* tab | 09/14/2022 |
 | 1948-2016 gridded meteorological observations | GMFD | http://hydrology.princeton.edu/data.pgf.php | *Download data locally* link | 09/14/2022 |
