@@ -2,6 +2,7 @@ library(MASS)
 library(tidyverse)
 library(rstan)
 library(rstanarm)
+library(brms)
 library(bayesplot)
 bayesplot_theme_update(text = element_text(size = 16, family = "sans"))
 theme_update(text = element_text(size = 16, family = "sans"))
@@ -15,42 +16,74 @@ library(patchwork)
 # Read all relevant data
 ##################################################
 
-# gridmet state obs
-df_state_obs_maize <- read_csv('../input_data/gridmet_state_weather_variables_maize_irr_weighted.csv')
-df_state_obs_soy <- read_csv('../input_data/gridmet_state_weather_variables_soy_irr_weighted.csv')
+# gridmet county obs
+df_county_obs <- read_csv('../input_data/gridmet_county_weather_variables_1979-2020.csv')
 
-# USDA water applied
-df_water_applied_maize <- read_csv('../input_data/usda_maize_water_applied_2013-2018.csv')
-df_water_applied_soy <- read_csv('../input_data/usda_soy_water_applied_2013-2018.csv')
+# USDA rainfed yields
+df_rf_maize_yields <- read_csv('../input_data/usda_maize_yields_1979-2020.csv')
+df_rf_soy_yields <- read_csv('../input_data/usda_soy_yields_1979-2020.csv')
 
-##################################################
-# Water Applied
-##################################################
+# USDA irrigated yields
+df_irr_maize_yields <- read_csv('../input_data/usda_maize_yields_irrigated_1979-2020.csv')
+df_irr_maize_yields$fips <- str_pad(df_irr_maize_yields$fips, 5, pad = "0")
+
+df_irr_soy_yields <- read_csv('../input_data/usda_soy_yields_irrigated_1979-2020.csv')
+df_irr_soy_yields$fips <- str_pad(df_irr_soy_yields$fips, 5, pad = "0")
 
 #################
 ## Maize
 #################
-df_maize <- inner_join(df_state_obs_maize, df_water_applied_maize, 
-                       by=c('year', 'state' = 'state_fips_code'))
+# Merge rainfed/irrigated yields with weather data
+df_maize <- inner_join(df_rf_maize_yields, df_irr_maize_yields,
+                       by = c('fips', 'year'),
+                       suffix = c('_rainfed', '_irr')) 
+
+df_maize <- inner_join(df_maize, df_county_obs,
+                       by = c('fips', 'year'))
+
+# Ratio
+df_maize$irr_to_rf_ratio <- (df_maize$yield_irr - df_maize$yield_rainfed)# / df_maize$yield_rainfed
+
+# Subset counties with yield ratio >= 1
+df_maize <- df_maize[df_maize$irr_to_rf_ratio >= 0,]
+# Subset year > 2000
+df_maize <- df_maize[df_maize$year >= 2010,]
 
 # Exploratory plots
-p1 <- ggplot(df_maize, aes(x = prcp, y = log(water_applied))) + 
-  geom_point(size = 2) + 
-  geom_smooth(method = "lm", se = FALSE) +
-  labs(x = "Precip", y = "log(Water Applied)",
+ggplot(df_maize) + 
+  geom_point(aes(x = prcp, y = yield_irr), color = 'blue') + 
+  geom_point(aes(x = prcp, y = yield_rainfed), color = 'orange') + 
+  labs(y = "Yield", x = "Precip",
        title = "Maize")
 
-p2 <- ggplot(df_maize, aes(x = EDD, y = log(water_applied))) + 
-  geom_point(size = 2) + 
-  geom_smooth(method = "lm", se = FALSE) +
-  labs(x = "EDD", y = "log(Water Applied)")
+ggplot(df_maize) + 
+  geom_point(aes(x = EDD, y = yield_irr), color = 'blue') + 
+  geom_point(aes(x = EDD, y = yield_rainfed), color = 'orange') + 
+  labs(y = "Yield", x = "EDD",
+       title = "Maize")
 
-ggsave(filename = '../figures/water_applied_maize_raw.png',
-       plot = p1 + p2 & scale_y_continuous(limits=c(4.7, 6.2)))
+ggplot(df_maize, aes(x = prcp, y = log(irr_to_rf_ratio))) + 
+  geom_point(size = 2) + 
+  geom_smooth(method='lm') +
+  labs(y = "Yield Ratio", x = "Precip",
+       title = "Maize")
+
+ggplot(df_maize, aes(x = EDD, y = log(irr_to_rf_ratio))) + 
+  geom_point(size = 2) + 
+  geom_smooth(method='lm') +
+  labs(x = "EDD", y = "")
+
+ggplot(df_maize, aes(x = GDD, y = irr_to_rf_ratio)) + 
+  geom_point(size = 2) + 
+  geom_smooth(method='lm') +
+  labs(x = "GDD", y = "")
+
+# ggsave(filename = '../figures/yield_ratio_maize_raw.png',
+#        plot = p1 + p2 & scale_y_continuous(limits=c(1, 5)))
 
 # OLS model
-water_applied_maize_model_freq <- lm(log(water_applied) ~ prcp + EDD, data = df_maize)
-summary(water_applied_maize_model_freq)
+yield_ratio_maize_model_freq <- lm(irr_to_rf_ratio ~ EDD + prcp, data = df_maize)
+summary(yield_ratio_maize_model_freq)
 
 # Bayesian model
 water_applied_maize_model <- stan_glm(log(water_applied) ~ prcp + EDD, data = df_maize,
@@ -100,13 +133,13 @@ ggsave('../figures/water_applied_maize_bayes_fit.png',
        plot = p1 | p2,
        width = 12, height = 6, units="in")
 
-# Approximate parameter posterior
+# Approximate parameter posteriors
 water_applied_maize_model_posterior <- as.data.frame(water_applied_maize_model)
 colnames(water_applied_maize_model_posterior)[1] <- "intercept"
 
 # Precip param
 prcp_fit <- fitdistr(water_applied_maize_model_posterior$prcp,
-         densfun = "normal")
+                     densfun = "normal")
 
 p_prcp <- ggplot() + 
   geom_density(data = water_applied_maize_model_posterior,
@@ -125,7 +158,7 @@ p_prcp <- ggplot() +
 
 # EDD param
 edd_fit <- fitdistr(water_applied_maize_model_posterior$EDD,
-                      densfun = "normal")
+                    densfun = "normal")
 
 p_edd <- ggplot() + 
   geom_density(data = water_applied_maize_model_posterior,
@@ -144,7 +177,7 @@ p_edd <- ggplot() +
 
 # Intercept
 intcp_fit <- fitdistr(water_applied_maize_model_posterior$intercept,
-                    densfun = "normal")
+                      densfun = "normal")
 
 p_intcp <- ggplot() + 
   geom_density(data = water_applied_maize_model_posterior,
@@ -163,7 +196,7 @@ p_intcp <- ggplot() +
 
 # Sigma
 sigma_fit <- fitdistr(water_applied_maize_model_posterior$sigma,
-                      densfun = "normal")
+                      densfun = "gamma")
 
 p_sigma <- ggplot() + 
   geom_density(data = water_applied_maize_model_posterior,
@@ -172,13 +205,13 @@ p_sigma <- ggplot() +
   geom_function(data = data.frame(x = c(min(water_applied_maize_model_posterior$sigma),
                                         max(water_applied_maize_model_posterior$sigma))),
                 aes(x = x),
-                fun = dnorm,
-                args = list(mean = sigma_fit$estimate['mean'],
-                            sd = sigma_fit$estimate['sd']),
+                fun = dgamma,
+                args = list(shape = sigma_fit$estimate['shape'],
+                            rate = sigma_fit$estimate['rate']),
                 colour="black", lty="dashed", size=1) + 
   labs(x="Sigma", y="",
-       subtitle=paste("Normal(", signif(sigma_fit$estimate['mean'], 3),
-                      ",", signif(sigma_fit$estimate['sd'], 3), ")", sep="")) 
+       subtitle=paste("Gamma(", signif(sigma_fit$estimate['shape'], 3),
+                      ",", signif(sigma_fit$estimate['rate'], 3), ")", sep=""))
 
 ggsave('../figures/water_applied_maize_bayes_posterior.png',
        plot = (p_prcp | p_edd) / (p_intcp | p_sigma),
@@ -187,76 +220,3 @@ ggsave('../figures/water_applied_maize_bayes_posterior.png',
 #################
 ## Soy
 #################
-df_soy <- inner_join(df_state_obs_soy, df_water_applied_soy, 
-                     by=c('year', 'state' = 'state_fips_code'))
-
-# Visualize data
-p1 <- ggplot(df_soy, aes(x = prcp, y = log(water_applied))) + 
-  geom_point(size = 2) + 
-  geom_smooth(method = "lm", se = FALSE) +
-  labs(x = "Precip", y = "log(Water Applied)",
-       title = "Soy")
-
-p2 <- ggplot(df_soy, aes(x = EDD, y = log(water_applied))) + 
-  geom_point(size = 2) + 
-  geom_smooth(method = "lm", se = FALSE) +
-  labs(x = "EDD", y = "log(Water Applied)")
-
-ggsave(filename = '../figures/water_applied_soy_raw.png',
-       plot = p1 + p2 & scale_y_continuous(limits=c(4.7, 6.1)))
-
-# OLS model
-water_applied_soy_model_freq <- lm(log(water_applied) ~ prcp + EDD, data = df_soy)
-summary(water_applied_soy_model_freq)
-
-# Bayesian model
-water_applied_soy_model <- stan_glm(log(water_applied) ~ prcp + EDD, data = df_soy,
-                                    family = gaussian(),
-                                    # prior_intercept = normal(0, 100, autoscale = T),
-                                    # prior = normal(0, 100, autoscale = T),
-                                    # prior_aux = exponential(0.0001, autoscale = T),
-                                    chains = 3, iter = 10000*2, 
-                                    cores = 3, seed = 84735)
-
-prior_summary(water_applied_soy_model)
-
-# Effective sample size ratio and Rhat
-neff_ratio(water_applied_soy_model)
-rhat(water_applied_soy_model)
-
-# Trace & density plots of parallel chains
-mcmc_trace(water_applied_soy_model, size = 0.1)
-mcmc_dens_overlay(water_applied_soy_model)
-
-# Posterior predictive checks
-pp_check(water_applied_soy_model, nreps = 100) + 
-  xlab("log Water Applied (mm/acre)") +
-  theme_grey()
-
-p1 <- ppc_intervals(
-  y = df_soy$water_applied,
-  yrep = exp(posterior_predict(water_applied_soy_model)),
-  x = df_soy$EDD,
-  prob = 0.95) +
-  labs(x = "EDD", y = "Water Applied (mm/acre)",
-       title = "Soy",
-       subtitle = "95% posterior predictive intervals") +
-  panel_bg(fill = "gray90", color = NA) +
-  grid_lines(color = "white")
-
-p2 <- ppc_intervals(
-  y = df_soy$water_applied,
-  yrep = exp(posterior_predict(water_applied_soy_model)),
-  x = df_soy$prcp,
-  prob = 0.95) +
-  labs(x = "Precip (mm)", y = "Water Applied (mm/acre)") +
-  panel_bg(fill = "gray90", color = NA) +
-  grid_lines(color = "white")
-
-ggsave('../figures/water_applied_soy_bayes_fit.png',
-       plot = p1 | p2,
-       width = 12, height = 6, units="in")
-
-# Summarize posterior
-tidy(water_applied_soy_model, effects = c("fixed", "aux"),
-     conf.int = TRUE, conf.level = 0.99)

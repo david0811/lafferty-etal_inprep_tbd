@@ -51,6 +51,7 @@ Note that *all* input data can be downloaded and pre-processed programatically b
 | 2013, 2018 US state-level water applied to soybean | USDA NASS Irrigation and Water Management Survey | https://quickstats.nass.usda.gov/ | *CENSUS - CROPS - FIELD CROPS - SOYBEANS - WATER APPLIED - SOYBEANS, IRRIGATED - WATER APPLIED, MEASURED IN ACRE FEET / ACRE - TOTAL - STATE* | 09/14/2022 |
 | 2013, 2018 US state-level irrigation expansion costs | USDA NASS Irrigation and Water Management Survey | https://quickstats.nass.usda.gov/ | *CENSUS - ECONOMICS - IRRIGATION - FACILITIES & EQUIPMENT - STATE* | 09/14/2022 |
 | 2013, 2018 US state-level irrigation application costs | USDA NASS Irrigation and Water Management Survey | https://quickstats.nass.usda.gov/ | *CENSUS - ECONOMICS - IRRIGATION - ENERGY - EXPENSE - STATE* | 09/14/2022 |
+| 2013, 2018 US state-level water applied including all crops | USDA NASS Irrigation and Water Management Survey | https://www.nass.usda.gov/Surveys/Guide_to_NASS_Surveys/Farm_and_Ranch_Irrigation/ | *Publications* - *2018/2013 Census of Irrigation* - *Table 4: Estimated Quantity of Water Applied By Source* - *Ground water from wells* - **Applied in the open* - *Only source* - *Average acre-feet applied*| 09/20/2022 |
 
 ### Output data
 
@@ -78,9 +79,10 @@ To skip these steps, download the processed input data from [*Input data referen
 0. Acquire an API key for both USDA NASS (https://quickstats.nass.usda.gov/api) and St. Louis FRED (https://fred.stlouisfed.org/). In `00e_usda_data_processing.ipynb` you will need to update the lines `usda_api_key = ...` and `fred_api_key = ...`
 1. Run the bash script `00a_gridmet_wget.sh`. This will download all relevant gridMET meteorological data (total size: **~150 GB**)
 2. Run the bash script `00b_gmfd_wget.sh`. This will download all relevant GMFD meteorological data (total size: **~50 GB**)
-3. Run the bash script `00c_us_shapefiles_wget.sh`. This will download all relevant shapefiles
-4. Execute all cells (in order) in `00d_weather_data_processing.ipynb`
-5. Execute all cells (in order) in `00e_usda_data_processing.ipynb`. Remember to update the lines `usda_api_key = ...` and `fred_api_key = ...`
+3. Run the bash script `00c_usda_fris_wget.sh`. This will download and extract relevant USDA Irrigation and Water Management Survey data
+4. Run the bash script `00d_us_shapefiles_wget.sh`. This will download all relevant shapefiles
+5. Execute all cells (in order) in `00e_weather_data_processing.ipynb`
+6. Execute all cells (in order) in `00f_usda_data_processing.ipynb`. Remember to update the lines `usda_api_key = ...` and `fred_api_key = ...`
 
 **1) Performing the regressions leading to model empirical equations**
 
