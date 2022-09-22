@@ -1,15 +1,11 @@
 library(MASS)
 library(tidyverse)
-library(rstan)
 library(rstanarm)
-library(brms)
 library(bayesplot)
-bayesplot_theme_update(text = element_text(size = 16, family = "sans"))
 theme_update(text = element_text(size = 16, family = "sans"))
 library(tidybayes)
 library(broom.mixed)
 library(modelr)
-library(bayesrules)
 library(patchwork)
 
 ##################################################
@@ -56,9 +52,6 @@ summary(water_applied_maize_model_freq)
 # Bayesian model
 water_applied_maize_model <- stan_glm(log(water_applied) ~ prcp + EDD, data = df_maize,
                                       family = gaussian(),
-                                      # prior_intercept = normal(0, 100),
-                                      # prior = normal(0, 100),
-                                      # prior_aux = exponential(0.0001),
                                       chains = 3, iter = 10000*2, 
                                       cores = 3, seed = 84735)
 
@@ -80,11 +73,11 @@ pp_check(water_applied_maize_model, nreps = 100) +
 p1 <- ppc_intervals(
   y = df_maize$water_applied,
   yrep = exp(posterior_predict(water_applied_maize_model)),
-  x = df_maize$EDD,
-  prob = 0.95) +
-  labs(x = "EDD", y = "Water Applied (mm/acre)",
+  x = df_maize$prcp,
+  prob = 0.9, prob_outer = 0.99) +
+  labs(x = "Precip", y = "Water Applied (mm/acre)",
        title = "Maize",
-       subtitle = "95% posterior predictive intervals") +
+       subtitle = "90, 99% posterior predictive intervals") +
   panel_bg(fill = "gray90", color = NA) +
   grid_lines(color = "white")
 
@@ -92,13 +85,13 @@ p2 <- ppc_intervals(
   y = df_maize$water_applied,
   yrep = exp(posterior_predict(water_applied_maize_model)),
   x = df_maize$prcp,
-  prob = 0.95) +
-  labs(x = "Precip (mm)", y = "Water Applied (mm/acre)") +
+  prob = 0.9, prob_outer = 0.99) +
+  labs(x = "Precip (mm)") +
   panel_bg(fill = "gray90", color = NA) +
   grid_lines(color = "white")
 
 ggsave('../figures/water_applied_maize_bayes_fit.png',
-       plot = p1 | p2,
+       plot = p1 & theme(legend.position = "none") | p2,
        width = 12, height = 6, units="in")
 
 # Approximate parameter posteriors
@@ -237,25 +230,25 @@ pp_check(water_applied_soy_model, nreps = 100) +
 p1 <- ppc_intervals(
   y = df_soy$water_applied,
   yrep = exp(posterior_predict(water_applied_soy_model)),
-  x = df_soy$EDD,
+  x = df_soy$prcp,
   prob = 0.95) +
-  labs(x = "EDD", y = "Water Applied (mm/acre)",
+  labs(x = "Precip", y = "Water Applied (mm/acre)",
        title = "Soy",
-       subtitle = "95% posterior predictive intervals") +
+       subtitle = "90, 99% posterior predictive intervals") +
   panel_bg(fill = "gray90", color = NA) +
   grid_lines(color = "white")
 
 p2 <- ppc_intervals(
   y = df_soy$water_applied,
   yrep = exp(posterior_predict(water_applied_soy_model)),
-  x = df_soy$prcp,
+  x = df_soy$EDD,
   prob = 0.95) +
-  labs(x = "Precip (mm)", y = "Water Applied (mm/acre)") +
+  labs(x = "EDD") +
   panel_bg(fill = "gray90", color = NA) +
   grid_lines(color = "white")
 
 ggsave('../figures/water_applied_soy_bayes_fit.png',
-       plot = p1 | p2,
+       plot = p1 & theme(legend.position = "none") | p2,
        width = 12, height = 6, units="in")
 
 # Approximate parameter posteriors

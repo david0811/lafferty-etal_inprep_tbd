@@ -23,9 +23,18 @@ df_county_obs <- read_csv('../input_data/gridmet_county_weather_variables_1979-2
 df_maize_yields <- read_csv('../input_data/usda_maize_yields_1979-2020.csv')
 df_soy_yields <- read_csv('../input_data/usda_soy_yields_1979-2020.csv')
 
-# USDA irrigated acres
-df_maize_irr_acre <- read_csv('../input_data/usda_maize_irrigated_acres_1997-2017.csv')
-df_soy_irr_acre <- read_csv('../input_data/usda_soy_irrigated_acres_1997-2017.csv')
+# USDA irrigated acres (survey)
+df_irr_maize_yields <- read_csv('../input_data/usda_maize_yields_irrigated_1979-2020.csv')
+df_irr_maize_yields$fips <- str_pad(df_irr_maize_yields$fips, 5, pad = "0")
+df_irr_maize_yields$state <- str_pad(df_irr_maize_yields$state, 2, pad = "0")
+
+df_irr_soy_yields <- read_csv('../input_data/usda_soy_yields_irrigated_1979-2020.csv')
+df_irr_soy_yields$fips <- str_pad(df_irr_soy_yields$fips, 5, pad = "0")
+df_irr_soy_yields$state <- str_pad(df_irr_soy_yields$state, 2, pad = "0")
+
+# USDA irrigated acres (census)
+df_irr_acre_maize <- read_csv('../input_data/usda_maize_irrigated_acres_1997-2017.csv')
+df_irr_acre_soy <- read_csv('../input_data/usda_soy_irrigated_acres_1997-2017.csv')
 
 ##################################################
 # Rainfed
@@ -34,10 +43,19 @@ df_soy_irr_acre <- read_csv('../input_data/usda_soy_irrigated_acres_1997-2017.cs
 #################
 ## Maize
 #################
-# Remove counties with >50% irrigation share in any of 1997, 2002, 2007, 2012, 2017
-df_maize_irr_check <- inner_join(df_maize_yields, df_maize_irr_acre)
-df_maize_irr_check$irr_acre_share <- df_maize_irr_check$irrigated_acreage / df_maize_irr_check$area
-irr_fips <- df_maize_irr_check[df_maize_irr_check$irr_acre_share > 0.5,]$fips
+# Remove counties with >20% irrigation share in survey 
+df_maize_irr_check <- inner_join(df_maize_yields, df_irr_maize_yields,
+                                 by = c('fips', 'year', 'state'),
+                                 suffix = c('_rf', '_irr')) 
+df_maize_irr_check$irr_acre_share <- df_maize_irr_check$area_irr / (df_maize_irr_check$area_rf + df_maize_irr_check$area_irr)
+irr_fips <- df_maize_irr_check[df_maize_irr_check$irr_acre_share > 0.2,]$fips
+
+df_maize_yields <- df_maize_yields[!df_maize_yields$fips %in% irr_fips,]
+
+# Remove counties with >20% irrigation share in census (any of 1997, 2002, 2007, 2012, 2017)
+df_maize_irr_check <- inner_join(df_maize_yields, df_irr_acre_maize)
+df_maize_irr_check$irr_acre_share <- df_maize_irr_check$irrigated_acreage / (df_maize_irr_check$irrigated_acreage + df_maize_irr_check$area)
+irr_fips <- df_maize_irr_check[df_maize_irr_check$irr_acre_share > 0.2,]$fips
 
 df_maize_yields <- df_maize_yields[!df_maize_yields$fips %in% irr_fips,]
 

@@ -3,12 +3,9 @@ library(tidyverse)
 library(rstan)
 library(rstanarm)
 library(bayesplot)
-bayesplot_theme_update(text = element_text(size = 16, family = "sans"))
 theme_update(text = element_text(size = 16, family = "sans"))
 library(tidybayes)
 library(broom.mixed)
-library(modelr)
-library(bayesrules)
 library(patchwork)
 
 ##################################################
@@ -31,7 +28,7 @@ df <- inner_join(df_water_applied, df_irr_app_cost)
 p1 <- ggplot(df, aes(x = log(water_applied_per_acre), y = log(irr_app_cost_per_acre))) + 
   geom_point(size = 2) + 
   geom_smooth(method = "lm", se = FALSE) +
-  labs(x = "log water applied (acre-feet/acre)", y = "log cost ($)")
+  labs(x = "log water applied (mm/acre)", y = "log cost ($)")
 
 ggsave(filename = '../figures/water_applied_cost_raw.png',
        plot = p1)
@@ -69,10 +66,12 @@ pp_check(water_applied_cost_model, nreps = 100) +
 p1 <- df %>%
   data_grid(water_applied_per_acre = seq_range(water_applied_per_acre, n = 101)) %>%
   add_predicted_draws(water_applied_cost_model) %>%
-  ggplot(aes(x = water_applied_per_acre, y = log(irr_app_cost_per_acre))) +
-  stat_lineribbon(aes(y = .prediction), .width = c(.99, .95, .8, .5), color = "#08519C") +
+  ggplot(aes(x = water_applied_per_acre, y = irr_app_cost_per_acre)) +
+  stat_lineribbon(aes(y = exp(.prediction)), .width = c(.99, .95, .8, .5), color = "#08519C") +
   geom_point(data = df, size = 2) +
-  scale_fill_brewer()
+  labs(x = "Water applied (mm/acre)", y = "Cost ($)") +
+  scale_fill_brewer() +
+  grid_lines(color = "white")
 
 ggsave('../figures/water_applied_cost_bayes_fit.png',
        plot = p1,
