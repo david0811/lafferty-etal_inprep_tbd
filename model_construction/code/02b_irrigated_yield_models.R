@@ -7,6 +7,7 @@ library(tidybayes)
 library(broom.mixed)
 library(patchwork)
 library(fixest)
+library(latex2exp)
 
 ##################################################
 # Read all relevant data
@@ -48,13 +49,12 @@ ggplot(data = df_maize) +
 
 ggplot(data = df_maize, aes(x=year, y=irr_to_nonirr_diff)) + 
   geom_point() + 
-  geom_smooth(method='lm')
+  geom_smooth()
 
-# There is a trend that seems to level off around 2000, so in the name of 
-# simplicity we will filter year >= 2000
+# filter year >= 2000
 df_maize_2000 <- df_maize[df_maize$year > 2000,]
 
-# Subset county count > 15
+# Subset county count > 10
 fips_min <- df_maize_2000 %>% group_by(fips) %>% count() %>% filter(n >= 10)
 fips_min <- fips_min$fips
 df_maize_2000 <- df_maize_2000[df_maize_2000$fips %in% fips_min,]
@@ -68,35 +68,40 @@ ggplot(data = df_maize_2000) +
 
 ggplot(data = df_maize_2000, aes(x=year, y=irr_to_nonirr_diff)) + 
   geom_point() + 
-  geom_smooth(method='lm')
+  geom_smooth()
 
 ggplot(data = df_maize_2000) + 
   geom_boxplot(aes(x=year, y=irr_to_nonirr_diff, group=year)) +
   facet_wrap(~ state)
+
+ggplot(data = df_maize_2000) + 
+  geom_histogram(aes(x=irr_to_nonirr_diff))
 
 p1 <- ggplot(df_maize_2000, aes(x = prcp, y = irr_to_nonirr_diff)) + 
   geom_point(size = 2) + 
   geom_smooth(method='lm') +
   labs(y = "Yield Differential", x = "Precip",
        title = "Maize")
+p1
 
 p2 <- ggplot(df_maize_2000, aes(x = EDD, y = irr_to_nonirr_diff)) + 
   geom_point(size = 2) + 
   geom_smooth(method='lm') +
   labs(x = "EDD", y = "Yield Differential")
+p2
 
 ggsave(filename = '../figures/yield_differential_maize_raw.png',
        plot = p1 + p2 & scale_y_continuous(limits=c(0, 200)))
 
 # OLS model
-yield_diff_maize_model_freq <- lm(irr_to_nonirr_diff ~ EDD + prcp,
+yield_diff_maize_model_freq <- lm(irr_to_nonirr_diff ~ prcp + EDD,
                                       data = df_maize_2000)
 summary(yield_diff_maize_model_freq)
 
 ########################
 # Bayesian model
 ########################
-yield_diff_maize_model <- stan_glm(irr_to_nonirr_diff ~ EDD + prcp,
+yield_diff_maize_model <- stan_glm(irr_to_nonirr_diff ~ prcp + EDD,
                                       data = df_maize_2000,
                                       family = gaussian(),
                                       chains = 3, iter = 10000*2, 
@@ -119,6 +124,7 @@ p <- pp_check(yield_diff_maize_model, nreps = 1000) +
        subtitle = "1000 Posterior Predictive Draws") +
   panel_bg(fill = "gray90", color = NA) +
   grid_lines(color = "white")
+p
 
 ggsave('../figures/yield_differential_maize_bayes_fit1.png',
        plot = p,
@@ -266,55 +272,54 @@ ggplot(data = df_soy, aes(x=year, y=irr_to_nonirr_diff)) +
   geom_point() + 
   geom_smooth(method='lm')
 
-# There is a trend that seems to level off around 2000, so in the name of 
-# simplicity we will filter year >= 2000
-df_soy_2000 <- df_soy[df_soy$year >= 2000,]
-
 # Subset county count > 10
-fips_min <- df_soy_2000 %>% group_by(fips) %>% count() %>% filter(n >= 10)
+fips_min <- df_soy %>% group_by(fips) %>% count() %>% filter(n >= 20)
 fips_min <- fips_min$fips
-df_soy_2000 <- df_soy_2000[df_soy_2000$fips %in% fips_min,]
+df_soy <- df_soy[df_soy$fips %in% fips_min,]
 
 # Subset to 'realistic' values
-df_soy_2000 <- df_soy_2000[df_soy_2000$irr_to_nonirr_diff > 0.,]
+df_soy <- df_soy[df_soy$irr_to_nonirr_diff > 0.,]
 
 # More exploratory plots
-ggplot(data = df_soy_2000) + 
+ggplot(data = df_soy) + 
   geom_boxplot(aes(x=year, y=irr_to_nonirr_diff, group=year))
 
-ggplot(data = df_soy_2000, aes(x=year, y=irr_to_nonirr_diff)) + 
+ggplot(data = df_soy, aes(x=year, y=irr_to_nonirr_diff)) + 
   geom_point() + 
   geom_smooth(method='lm')
 
-ggplot(data = df_soy_2000) + 
+ggplot(data = df_soy) + 
   geom_boxplot(aes(x=year, y=irr_to_nonirr_diff, group=year)) +
   facet_wrap(~ state)
 
-p1 <- ggplot(df_soy_2000, aes(x = prcp, y = irr_to_nonirr_diff)) + 
+p1 <- ggplot(df_soy, aes(x = prcp, y = irr_to_nonirr_diff)) + 
   geom_point(size = 2) + 
-  geom_smooth(method='lm') +
+  geom_smooth(method='lm') + 
   labs(y = "Yield Differential", x = "Precip",
        title = "Soy")
+p1
 
-p2 <- ggplot(df_soy_2000, aes(x = EDD, y = irr_to_nonirr_diff)) + 
+p2 <- ggplot(df_soy, aes(x = EDD, y = irr_to_nonirr_diff)) + 
   geom_point(size = 2) + 
   geom_smooth(method='lm') +
   labs(x = "EDD", y = "Yield Differential")
+p2
 
 ggsave(filename = '../figures/yield_differential_soy_raw.png',
        plot = p1 + p2 & scale_y_continuous(limits=c(0, 75)))
 
 # OLS model
-yield_diff_soy_model_freq <- lm(irr_to_nonirr_diff ~ EDD + prcp,
-                                data = df_soy_2000)
+yield_diff_soy_model_freq <- glm(irr_to_nonirr_diff ~ EDD + prcp,
+                                 family = Gamma(link='inverse'),
+                                 data = df_soy)
 summary(yield_diff_soy_model_freq)
 
 #####################
 # Bayesian model
 #####################
 yield_diff_soy_model <- stan_glm(irr_to_nonirr_diff ~ EDD + prcp,
-                                 data = df_soy_2000,
-                                 family = gaussian(),
+                                 data = df_soy,
+                                 family = Gamma(link='inverse'),
                                  chains = 3, iter = 10000*2, 
                                  cores = 3, seed = 84735)
 
@@ -334,35 +339,41 @@ p <- pp_check(yield_diff_soy_model, nreps = 1000) +
        title = "Soy",
        subtitle = "1000 Posterior Predictive Draws") +
   panel_bg(fill = "gray90", color = NA) +
-  grid_lines(color = "white")
+  grid_lines(color = "white") + 
+  scale_x_continuous(limits=c(0, 50))
+p
 
 ggsave('../figures/yield_differential_soy_bayes_fit1.png',
        plot = p,
        width = 12, height = 6, units="in")
 
 # Sampling for posterior predictive checks as function of predictors
-sampling <- seq(1, nrow(df_soy_2000), 10)
+sampling <- seq(1, nrow(df_soy), 10)
 yrep <- posterior_predict(yield_diff_soy_model, draws=1000)
 
 p1 <- ppc_intervals(
-  y = df_soy_2000$irr_to_nonirr_diff[sampling],
+  y = df_soy$irr_to_nonirr_diff[sampling],
   yrep = yrep[,sampling],
-  x = df_soy_2000$prcp[sampling],
+  x = df_soy$prcp[sampling],
   prob = 0.90, prob_outer=0.99) +
   labs(x = "Precip", y = "Yield Differential",
        title = "Soy",
        subtitle = "90, 99% posterior predictive intervals") +
   panel_bg(fill = "gray90", color = NA) +
-  grid_lines(color = "white")
+  grid_lines(color = "white") +
+  scale_y_continuous(limits=c(0, 100))
+p1
 
 p2 <- ppc_intervals(
-  y = df_soy_2000$irr_to_nonirr_diff[sampling],
+  y = df_soy$irr_to_nonirr_diff[sampling],
   yrep = yrep[,sampling],
-  x = df_soy_2000$EDD[sampling],
+  x = df_soy$EDD[sampling],
   prob = 0.90, prob_outer=0.99) +
   labs(x = "EDD") +
   panel_bg(fill = "gray90", color = NA) +
-  grid_lines(color = "white")
+  grid_lines(color = "white") +
+  scale_y_continuous(limits=c(0, 100))
+p2
 
 ggsave('../figures/yield_differential_soy_bayes_fit2.png',
        plot = p1 & theme(legend.position = "none") | p2,
@@ -431,25 +442,74 @@ p_intcp <- ggplot() +
        subtitle=paste("Normal(", signif(intcp_fit$estimate['mean'], 3),
                       ",", signif(intcp_fit$estimate['sd'], 3), ")", sep=""))
 
-# Sigma
-sigma_fit <- fitdistr(yield_diff_soy_model_posterior$sigma,
-                      densfun = "gamma")
+# Shape
+shape_fit <- fitdistr(yield_diff_soy_model_posterior$shape,
+                      densfun = "normal")
 
-p_sigma <- ggplot() + 
+p_shape <- ggplot() + 
   geom_density(data = yield_diff_soy_model_posterior,
-               aes(x = sigma, after_stat(density)),
+               aes(x = shape, after_stat(density)),
                colour="red", size=1) +
-  geom_function(data = data.frame(x = c(min(yield_diff_soy_model_posterior$sigma),
-                                        max(yield_diff_soy_model_posterior$sigma))),
+  geom_function(data = data.frame(x = c(min(yield_diff_soy_model_posterior$shape),
+                                        max(yield_diff_soy_model_posterior$shape))),
                 aes(x = x),
-                fun = dgamma,
-                args = list(shape = sigma_fit$estimate['shape'],
-                            rate = sigma_fit$estimate['rate']),
+                fun = dnorm,
+                args = list(mean = shape_fit$estimate['mean'],
+                            sd = shape_fit$estimate['sd']),
                 colour="black", lty="dashed", size=1) + 
-  labs(x="Sigma", y="",
-       subtitle=paste("Gamma(", signif(sigma_fit$estimate['shape'], 3),
-                      ",", signif(sigma_fit$estimate['rate'], 3), ")", sep=""))
+  labs(x=TeX(r'(Shape ($\alpha$))'), y="",
+       subtitle=paste("Normal(", signif(shape_fit$estimate['mean'], 3),
+                      ",", signif(shape_fit$estimate['sd'], 3), ")", sep=""))
 
 ggsave('../figures/yield_differential_soy_posterior.png',
-       plot = (p_prcp | p_edd) / (p_intcp | p_sigma),
+       plot = (p_prcp | p_edd) / (p_intcp | p_shape),
        width = 12, height = 6, units="in")
+
+########################################
+# Check gamma regression formula
+########################################
+# one 'new' data point
+test_data <- data.frame(prcp = c(400), EDD = c(150))
+yrep_test <- posterior_predict(yield_diff_soy_model, 
+                               newdata = test_data,
+                               draws=30000)
+
+# get eta (inverse mean since we used inverse link function)
+test_eta <- as.matrix(
+  400*yield_diff_soy_model_posterior$prcp + 
+  150*yield_diff_soy_model_posterior$EDD + 
+  yield_diff_soy_model_posterior$intercept)
+
+# get mean
+test_mu <- 1/test_eta
+
+# get scale parameter
+test_scale <- test_mu/yield_diff_soy_model_posterior$shape
+
+# simulate from posterior
+test_posterior <- rgamma(n = length(test_scale),
+                         rate=1/test_scale,
+                         shape=yield_diff_soy_model_posterior$shape)
+
+# check
+ggplot() + 
+  geom_density(data=as.data.frame(yrep_test),
+               aes(x=`1`)) +
+  geom_density(data=as.data.frame(test_posterior),
+               aes(x=test_posterior, color='orange'))
+
+# all in one formula
+test_rate <- test_eta * yield_diff_soy_model_posterior$shape
+
+# check again
+test_posterior <- rgamma(n = length(test_scale),
+                         rate=test_rate,
+                         shape=yield_diff_soy_model_posterior$shape)
+
+ggplot() + 
+  geom_density(data=as.data.frame(yrep_test),
+               aes(x=`1`)) +
+  geom_density(data=as.data.frame(test_posterior),
+               aes(x=test_posterior, color='orange'))
+
+

@@ -1,11 +1,13 @@
+library(MASS)
 library(tidyverse)
-library(rstan)
 library(rstanarm)
 library(bayesplot)
+theme_update(text = element_text(size = 16, family = "sans"))
 library(tidybayes)
 library(broom.mixed)
+library(patchwork)
+library(fixest)
 library(modelr)
-library(bayesrules)
 
 ##################################################
 # Read all relevant data
@@ -15,99 +17,125 @@ library(bayesrules)
 df_county_obs <- read_csv('../input_data/gridmet_county_weather_variables_1979-2020.csv')
 df_county_obs$state <- df_county_obs$fips %>% substr(1,2) # add state column
 
-df_county_obs_mw <- filter(df_county_obs, state %in% c('17','19','29')) # IL, IA, MO
+df_mw_obs <- read_csv('../input_data/nclimgrid_midwest_tavg_1895-2021.csv')
+tavg_mw_linmod <- lm(tavg_mw ~ year, data=df_mw_obs)
+df_mw_obs$tavg_mw_dt <- resid(tavg_mw_linmod)
 
 ##################################################
-# County GDD
+# Midwest Tavg -> county Tavg
 ##################################################
+df <- inner_join(df_county_obs, df_mw_obs)
 
 # Visualize data
-ggplot(df_county_obs_mw, aes(x = tavg, y = GDD)) + 
+p <- ggplot(df, aes(x = tavg_mw_dt, y = tavg)) + 
   geom_point(size = 0.5) + 
-  geom_smooth(method = "lm", se = FALSE)
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(x='Midwest temperature anomaly (C)',
+       y='County temperature (C)')
+p
+
+ggsave('../figures/county_tavg_raw.png',
+       plot = p,
+       width = 12, height = 6, units="in")
 
 # OLS model
-GDD_model_freq <- lm(GDD ~ tavg, data = df_county_obs_mw)
-summary(GDD_model_freq)
+tavg_model_freq <- lm(tavg ~ tavg_mw_dt, data = df)
+summary(tavg_model_freq)
 
 # Bayesian model
-GDD_model <- stan_glm(GDD ~ tavg, data = df_county_obs_mw,
+tavg_model <- stan_glm(tavg ~ tavg_mw_dt, data = df,
                      family = gaussian,
-                     # prior_intercept = normal(-1000, 100),
-                     # prior = normal(150, 100),
-                     # prior_aux = exponential(0.0008),
                      chains = 3, iter = 10000*2, 
                      cores = 3, seed = 84735)
 
-prior_summary(GDD_model)
+prior_summary(tavg_model)
 
 # Effective sample size ratio and Rhat
-neff_ratio(GDD_model)
-rhat(GDD_model)
+neff_ratio(tavg_model)
+rhat(tavg_model)
 
 # Trace & density plots of parallel chains
-mcmc_trace(GDD_model, size = 0.1)
-mcmc_dens_overlay(GDD_model)
-
-# Summarize posterior
-tidy(GDD_model, effects = c("fixed", "aux"),
-     conf.int = TRUE, conf.level = 0.99)
+mcmc_trace(tavg_model, size = 0.1)
+mcmc_dens_overlay(tavg_model)
 
 # Plot predictive
-df_county_obs_mw %>%
-  data_grid(tavg = seq_range(tavg, n = 101)) %>%
-  add_predicted_draws(GDD_model) %>%
-  ggplot(aes(x = tavg, y = GDD)) +
+p1 <- df %>%
+  data_grid(tavg_mw_dt = seq_range(tavg_mw_dt, n = 101)) %>%
+  add_predicted_draws(tavg_model) %>%
+  ggplot(aes(x = tavg_mw_dt, y = tavg)) +
   stat_lineribbon(aes(y = .prediction), .width = c(.99, .95, .8, .5), color = "#08519C") +
-  geom_point(data = df_county_obs_mw, size = 0.1) +
-  scale_fill_brewer()
+  geom_point(data = df, size = 0.1) +
+  scale_fill_brewer() + 
+  labs(x='Midwest temperature anomaly (C)',
+       y='County temperature (C)')
 
-# Posterior predictive check
-pp_check(GDD_model, nreps = 100) + 
-  xlab("County GDD") +
-  theme_grey()
+ggsave('../figures/county_tavg_bayes_fit.png',
+       plot = p1,
+       width = 12, height = 6, units="in")
 
-##################################################
-# County EDD
-##################################################
-# Visualize data
-ggplot(df_county_obs_mw, aes(x = tavg, y = log(EDD))) + 
-  geom_point(size = 0.5) + 
-  geom_smooth(method = "lm", se = FALSE)
+#######################################
+# Approximate parameter posteriors
+#######################################
+tavg_model_posterior <- as.data.frame(tavg_model)
+colnames(tavg_model_posterior)[1] <- "intercept"
 
-# Bayesian model
-EDD_model <- stan_glm(log(EDD) ~ tavg, data = df_county_obs_mw,
-                      family = gaussian(),
-                      prior_intercept = normal(0, 100),
-                      prior = normal(0, 100),
-                      prior_aux = exponential(0.0008),
-                      chains = 3, iter = 1000*2, 
-                      cores = 3, seed = 84735)
+# tavg_mw param
+tavg_mw_fit <- fitdistr(tavg_model_posterior$tavg_mw_dt,
+                     densfun = "normal")
 
-prior_summary(EDD_model)
+p_tavg_mw <- ggplot() + 
+  geom_density(data = tavg_model_posterior,
+               aes(x = tavg_mw_dt, after_stat(density)),
+               colour="red", size=1) +
+  geom_function(data = data.frame(x = c(min(tavg_model_posterior$tavg_mw_dt),
+                                        max(tavg_model_posterior$tavg_mw_dt))),
+                aes(x = x),
+                fun = dnorm,
+                args = list(mean = tavg_mw_fit$estimate['mean'],
+                            sd = tavg_mw_fit$estimate['sd']),
+                colour="black", lty="dashed", size=1) + 
+  labs(x="Midwest Tavg Coefficient", y="",
+       subtitle=paste("Normal(", signif(tavg_mw_fit$estimate['mean'], 3),
+                      ",", signif(tavg_mw_fit$estimate['sd'], 3), ")", sep="")) 
 
-# Effective sample size ratio and Rhat
-neff_ratio(EDD_model)
-rhat(EDD_model)
+# Intercept
+intcp_fit <- fitdistr(tavg_model_posterior$intercept,
+                      densfun = "normal")
 
-# Trace & density plots of parallel chains
-mcmc_trace(EDD_model, size = 0.1)
-mcmc_dens_overlay(EDD_model)
+p_intcp <- ggplot() + 
+  geom_density(data = tavg_model_posterior,
+               aes(x = intercept, after_stat(density)),
+               colour="red", size=1) +
+  geom_function(data = data.frame(x = c(min(tavg_model_posterior$intercept),
+                                        max(tavg_model_posterior$intercept))),
+                aes(x = x),
+                fun = dnorm,
+                args = list(mean = intcp_fit$estimate['mean'],
+                            sd = intcp_fit$estimate['sd']),
+                colour="black", lty="dashed", size=1) + 
+  labs(x="Intercept", y="",
+       subtitle=paste("Normal(", signif(intcp_fit$estimate['mean'], 3),
+                      ",", signif(intcp_fit$estimate['sd'], 3), ")", sep=""))
 
-# Summarize posterior
-tidy(EDD_model, effects = c("fixed", "aux"),
-     conf.int = TRUE, conf.level = 0.99)
+# Sigma
+sigma_fit <- fitdistr(tavg_model_posterior$sigma,
+                      densfun = "gamma")
 
-# Plot predictive
-df_county_obs_mw %>%
-  data_grid(tavg = seq_range(tavg, n = 101)) %>%
-  add_predicted_draws(EDD_model, tranform=TRUE) %>%
-  ggplot(aes(x = tavg, y = log(EDD))) +
-  stat_lineribbon(aes(y = .prediction), .width = c(.99, .95, .8, .5), color = "#08519C") +
-  geom_point(data = df_county_obs_mw, size = 0.1) +
-  scale_fill_brewer()
+p_sigma <- ggplot() + 
+  geom_density(data = tavg_model_posterior,
+               aes(x = sigma, after_stat(density)),
+               colour="red", size=1) +
+  geom_function(data = data.frame(x = c(min(tavg_model_posterior$sigma),
+                                        max(tavg_model_posterior$sigma))),
+                aes(x = x),
+                fun = dgamma,
+                args = list(shape = sigma_fit$estimate['shape'],
+                            rate = sigma_fit$estimate['rate']),
+                colour="black", lty="dashed", size=1) + 
+  labs(x="Sigma", y="",
+       subtitle=paste("Gamma(", signif(sigma_fit$estimate['shape'], 3),
+                      ",", signif(sigma_fit$estimate['rate'], 3), ")", sep=""))
 
-# Posterior predictive checks
-pp_check(EDD_model, nreps = 50) + 
-  xlab("County EDD") +
-  theme_grey()
+ggsave('../figures/county_tavg_posterior.png',
+       plot = p_tavg_mw / (p_intcp | p_sigma),
+       width = 12, height = 6, units="in")

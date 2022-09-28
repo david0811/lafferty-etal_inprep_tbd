@@ -38,7 +38,7 @@ Note that *all* input data can be downloaded and pre-processed programatically b
 | Data Description | Source | URL | Additonal Instructions | Date Accessed |
 | --- | --- | --- | --- | --- |
 | 1979-2020 gridded meteorological observations | gridMET (also known/cited as METDATA) | https://www.climatologylab.org/gridmet.html | *Download* tab | 09/14/2022 |
-| 1948-2016 gridded meteorological observations | GMFD | http://hydrology.princeton.edu/data.pgf.php | *Download data locally* link | 09/14/2022 |
+| 1895-2022 gridded temperature observations | NClimGrid | https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc:C00332 | *Download data* - *NCEI Direct Download (archive)* - *nclimgrid_tavg.nc* | 09/28/2022 |
 | Shapefile of US counties and states | US Census Bureau | https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html | *cb_2018_us_county_20m.zip* and *cb_2018_us_state_20m.zip* | 09/14/2022 |
 | 1979-2020 US county-level maize yields | USDA National Agricultural Statistics Service (NASS) | https://quickstats.nass.usda.gov/ | *SURVEY - CROPS - FIELD CROPS - CORN - YIELD - CORN, GRAIN - YIELD, MEASURED IN BU/ACRE - COUNTY* | 09/14/2022 |
 | 1979-2020 US county-level soybean yields | USDA NASS | https://quickstats.nass.usda.gov/ | *SURVEY - CROPS - FIELD CROPS - SOYBEANS - YIELD - SOYBEANS - YIELD, MEASURED IN BU/ACRE - COUNTY* | 09/14/2022 |
@@ -51,7 +51,7 @@ Note that *all* input data can be downloaded and pre-processed programatically b
 | 2013, 2018 US state-level water applied to soybean | USDA NASS Irrigation and Water Management Survey | https://quickstats.nass.usda.gov/ | *CENSUS - CROPS - FIELD CROPS - SOYBEANS - WATER APPLIED - SOYBEANS, IRRIGATED - WATER APPLIED, MEASURED IN ACRE FEET / ACRE - TOTAL - STATE* | 09/14/2022 |
 | 2013, 2018 US state-level irrigation expansion costs | USDA NASS Irrigation and Water Management Survey | https://quickstats.nass.usda.gov/ | *CENSUS - ECONOMICS - IRRIGATION - FACILITIES & EQUIPMENT - STATE* | 09/14/2022 |
 | 2013, 2018 US state-level irrigation application costs | USDA NASS Irrigation and Water Management Survey | https://quickstats.nass.usda.gov/ | *CENSUS - ECONOMICS - IRRIGATION - ENERGY - EXPENSE - STATE* | 09/14/2022 |
-| 2013, 2018 US state-level water applied including all crops | USDA NASS Irrigation and Water Management Survey | https://www.nass.usda.gov/Surveys/Guide_to_NASS_Surveys/Farm_and_Ranch_Irrigation/ | *Publications* - *2018/2013 Census of Irrigation* - *Table 4: Estimated Quantity of Water Applied By Source* - *Ground water from wells* - **Applied in the open* - *Only source* - *Average acre-feet applied*| 09/20/2022 |
+| 2013, 2018 US state-level water applied including all crops | USDA NASS Irrigation and Water Management Survey | https://www.nass.usda.gov/Surveys/Guide_to_NASS_Surveys/Farm_and_Ranch_Irrigation/ | *Publications* - *2018/2013 Census of Irrigation* - *Table 4: Estimated Quantity of Water Applied By Source* - *Ground water from wells* - *Applied in the open* - *Only source* - *Average acre-feet applied*| 09/20/2022 |
 
 ### Output data
 

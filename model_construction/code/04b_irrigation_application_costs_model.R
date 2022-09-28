@@ -7,6 +7,7 @@ theme_update(text = element_text(size = 16, family = "sans"))
 library(tidybayes)
 library(broom.mixed)
 library(patchwork)
+library(modelr)
 
 ##################################################
 # Read all relevant data

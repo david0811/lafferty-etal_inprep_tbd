@@ -12,26 +12,56 @@ library(patchwork)
 ##################################################
 # Read all relevant data
 ##################################################
-df <- read_csv('../input_data/gridmet_midwest_tavg_1979-2020.csv')
+df_gridmet <- read_csv('../input_data/gridmet_midwest_tavg_1979-2020.csv')
+df_nclim <- read_csv('../input_data/nclimgrid_midwest_tavg_1895-2021.csv')
+
+# nclimgrid vs gridmet
+ggplot() + 
+  geom_line(data=df_nclim, aes(x=year, y=tavg_mw), color='blue') + 
+  geom_smooth(data=df_nclim, aes(x=year, y=tavg_mw), color='blue', method='lm') + 
+  geom_line(data=df_gridmet, aes(x=year, y=tavg_mw), color='orange') +
+  geom_smooth(data=df_gridmet, aes(x=year, y=tavg_mw), color='orange', method='lm')
+
+# detrend
+nclim_tavg_mw_linmod <- lm(tavg_mw ~ year, data=df_nclim)
+df_nclim$tavg_mw_dt <- resid(nclim_tavg_mw_linmod)
+
+gridmet_tavg_mw_linmod <- lm(tavg_mw ~ year, data=df_gridmet)
+df_gridmet$tavg_mw_dt <- resid(gridmet_tavg_mw_linmod)
+
+# now...
+ggplot() + 
+  geom_line(data=df_nclim, aes(x=year, y=tavg_mw_dt), color='blue') + 
+  geom_line(data=df_gridmet, aes(x=year, y=tavg_mw_dt), color='orange')
+
+ggplot() + 
+  geom_density(data=df_nclim, aes(tavg_mw_dt), color='blue') + 
+  geom_density(data=df_gridmet, aes(tavg_mw_dt), color='orange')
+
+# NClimGrid shows considerably larger variations than gridMET in 
+# historical average temperatures. We need to use NClimGrid in the price module
+# so in order to keep the model internally consistent we will calibrate 
+# all modules that depend on Midwest Tavg against NClimGrid anomalies
 
 ##################################################
 # Model
 ##################################################
 # Exploratory plots
-p1 <- ggplot(df, aes(x = tavg_mw)) + 
+p1 <- ggplot(df_nclim, aes(x = tavg_mw_dt)) + 
   geom_histogram(bins=20) +
-  labs(x = "average temperature (C)", y="")
+  labs(x = "Midwest temperature anomaly (C)", y="")
+p1
 
 ggsave(filename = '../figures/tavg_mw_raw.png',
        plot = p1)
 
 # Frequentist model
-tavg_model_freq <- fitdistr(df$tavg_mw, densfun = "normal")
+tavg_model_freq <- fitdistr(df_nclim$tavg_mw_dt, densfun = "normal")
 tavg_model_freq
 
 # Bayesian model
-tavg_model <- stan_glm(tavg_mw ~ 1,
-                       data = df,
+tavg_model <- stan_glm(tavg_mw_dt ~ 1,
+                       data = df_nclim,
                        family = gaussian,
                        chains = 3, iter = 10000*2, 
                        cores = 3, seed = 84735)
@@ -47,12 +77,15 @@ mcmc_trace(tavg_model, size = 0.1)
 mcmc_dens_overlay(tavg_model)
 
 # Posterior predictive checks
-p1 <- pp_check(tavg_model, nreps = 1000) + 
-  labs(x="average temperature (C)") +
-  theme_grey()
+p <- pp_check(tavg_model, nreps = 1000) + 
+  labs(x="Midwest temperature anomaly (C)", y="Density",
+       subtitle = "1000 Posterior Predictive Draws") +
+  panel_bg(fill = "gray90", color = NA) +
+  grid_lines(color = "white")
+p
 
 ggsave('../figures/tavg_mw_bayes_fit.png',
-       plot = p1,
+       plot = p,
        width = 12, height = 6, units="in")
 
 # Approximate parameter posterior
