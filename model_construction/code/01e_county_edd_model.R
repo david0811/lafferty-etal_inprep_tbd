@@ -42,11 +42,6 @@ EDD_model_freq <- lm(log(EDD) ~ tavg, data = df_county_obs)
 summary(EDD_model_freq)
 
 # Bayesian model
-EDD_model <- stan_glm(log(EDD) ~ tavg, data = df_county_obs,
-                     family = gaussian,
-                     chains = 3, iter = 10000*2, 
-                     cores = 3, seed = 84735)
-
 EDD_model <- brm(bf(log(EDD) ~ tavg, sigma ~ tavg), 
                  data = df_county_obs,
                  family = gaussian(),
@@ -72,7 +67,8 @@ p1 <- df_county_obs %>%
   stat_lineribbon(aes(y = exp(.prediction)), .width = c(.99, .95, .8, .5), color = "#08519C") +
   geom_point(data = df_county_obs[sampling,], size = 0.1) +
   scale_fill_brewer() +
-  labs(x='County average temperature (C)', y='County EDD')
+  labs(x='County average temperature (C)', y='County EDD') +
+  xlim(12,26)
 p1
 
 ggsave(filename = '../figures/county_edd_bayes_fit.png',
@@ -121,8 +117,8 @@ p_sigma_tavg <- ggplot() +
                             mean = sigma_tavg_fit$estimate['mean']),
                 colour="black", lty="dashed", size=1) + 
   labs(x="sigma_tavg", y="",
-       subtitle=paste("Normal(", signif(sigma_tavg_fit$estimate['sd'], 3),
-                      ",", signif(sigma_tavg_fit$estimate['mean'], 3), ")", sep="")) 
+       subtitle=paste("Normal(", signif(sigma_tavg_fit$estimate['mean'], 3),
+                      ",", signif(sigma_tavg_fit$estimate['sd'], 3), ")", sep="")) 
 
 # Intercept
 intcp_fit <- fitdistr(EDD_model_posterior$b_Intercept,

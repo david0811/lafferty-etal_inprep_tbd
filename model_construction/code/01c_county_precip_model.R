@@ -133,8 +133,8 @@ p_beta <- ggplot() +
                             shape = beta_fit$estimate['shape']),
                 colour="black", lty="dashed", size=1) + 
   labs(x="beta", y="",
-       subtitle=paste("Gamma(", signif(beta_fit$estimate['rate'], 3),
-                      ",", signif(beta_fit$estimate['shape'], 3), ")", sep="")) 
+       subtitle=paste("Gamma(", signif(beta_fit$estimate['shape'], 3),
+                      ",", signif(beta_fit$estimate['rate'], 3), ")", sep="")) 
 
 ggsave('../figures/county_precip_bayes_posterior.png',
        plot = p_alpha | p_beta,
